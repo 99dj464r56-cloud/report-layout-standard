@@ -20,7 +20,7 @@ import sys, os, re, json
 from collections import Counter
 import pymupdf
 
-EXPECT_PAGES = 69
+EXPECT_PAGES = 70
 END_PUNCT = '。；：！？）〕」』…—'
 
 # 内部档案名 / 本机路径 / 旧版本代号 —— 一律不得出现在读者可见正文
