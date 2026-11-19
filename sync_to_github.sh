@@ -1,26 +1,22 @@
 #!/bin/bash
-# 同步 report-layout-standard 到 GitHub（单一来源）
-# 用 gh api 走 contents 接口，绕过 git push 在本机网络环境下的限制。
-# 用法：bash sync_to_github.sh [提交说明]
-set -e
+# 本仓库是公开指针，不再是独立排版技能。
+# 唯一来源：私有仓库 99dj464r56-cloud/company-research-skill（技能「公司课题研究」）。
+#
+# 本脚本原先会把 ~/.workbuddy/skills/report-layout-standard 里的旧 SKILL.md、
+# README.md 和门禁脚本用 gh api 推回本仓库。那会覆盖指针，把这里变回一套
+# 平行的、只含排版的技能，因此已停用。
+#
+# 不要从旧的 report-layout-standard 技能目录覆盖：
+#   SKILL.md
+#   README.md
+# 排版细则与门禁脚本的权威文本在 company-research-skill：
+#   references/layout-rules.md
+#   scripts/终版排版验收.py   （--expect-pages N，不得写死 EXPECT_PAGES）
+#   scripts/检测裸数字.py
+# 公开副本只从那份技能同步，且不得覆盖上面两个指针文件。
+set -euo pipefail
 
-REPO="99dj464r56-cloud/report-layout-standard"
-SKILL_DIR="$HOME/.workbuddy/skills/report-layout-standard"
-MSG="${1:-sync: 更新排版规范}"
-
-cd "$SKILL_DIR"
-
-for f in README.md SKILL.md "scripts/终版排版验收.py" "scripts/检测裸数字.py"; do
-  # 取当前文件的 sha（若已存在）
-  sha=$(gh api "repos/$REPO/contents/$f" --jq '.sha' 2>/dev/null || true)
-  content=$(base64 < "$f" | tr -d '\n')
-  if [ -n "$sha" ]; then
-    gh api -X PUT "repos/$REPO/contents/$f" \
-      -f message="$MSG" -f content="$content" -f sha="$sha" --jq '.content.path' 2>/dev/null
-  else
-    gh api -X PUT "repos/$REPO/contents/$f" \
-      -f message="$MSG" -f content="$content" --jq '.content.path' 2>/dev/null
-  fi
-  echo "✓ 已同步 $f"
-done
-echo "完成：$REPO"
+echo "已停止：本脚本不再把旧的 report-layout-standard 技能推回本仓库。" >&2
+echo "唯一来源是「公司课题研究」：https://github.com/99dj464r56-cloud/company-research-skill" >&2
+echo "SKILL.md 与 README.md 是指针，不得被旧排版技能覆盖。" >&2
+exit 1

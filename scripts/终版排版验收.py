@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-V1.3 信贷研究报告 —— 排版终版验收脚本（可复现硬门禁）
+研究报告 —— 排版终版验收脚本（可复现硬门禁）
 
 用途：把"排版是否达标"从主观判断，变成可被任何人复现的客观门禁。
-只要本脚本全部 PASS，即认定该 PDF 通过了全部可量化的排版硬指标。
+只要本脚本全部硬门禁 PASS，即认定该 PDF 通过了全部可量化的排版硬指标。
 
 用法：
-    python3 终版排版验收.py <V1.3_打印.pdf> [附录页码.json]
+    python3 终版排版验收.py <报告.pdf> [附录页码.json] [--expect-pages N]
+
+说明：
+  --expect-pages N  仅在报告已约定总页数时使用；未指定则 A1 只报告实际页数，不因此 FAIL。
 
 依赖：pymupdf（pip install pymupdf）
 
@@ -20,7 +23,6 @@ import sys, os, re, json
 from collections import Counter
 import pymupdf
 
-EXPECT_PAGES = 70
 END_PUNCT = '。；：！？）〕」』…—'
 
 # 内部档案名 / 本机路径 / 旧版本代号 —— 一律不得出现在读者可见正文
@@ -56,7 +58,7 @@ def first_meaningful_line(page):
     lines = [l for l in first[4].strip().split('\n') if l.strip()]
     return lines[0].strip() if lines else ''
 
-def main(path, json_path=None):
+def main(path, json_path=None, expect_pages=None):
     doc = pymupdf.open(path)
     results = []
     W, H = doc[0].rect.width, doc[0].rect.height
@@ -66,9 +68,12 @@ def main(path, json_path=None):
         results.append((name, status, evidence))
 
     # ── A. 结构完整性 ────────────────────────────────
-    add('A1 页数 = %d' % EXPECT_PAGES,
-        'PASS' if len(doc) == EXPECT_PAGES else 'FAIL',
-        '%d 页' % len(doc))
+    if expect_pages is None:
+        add('A1 页数', 'INFO', '%d 页（未指定期望页数，不作为硬门禁）' % len(doc))
+    else:
+        add('A1 页数 = %d' % expect_pages,
+            'PASS' if len(doc) == expect_pages else 'FAIL',
+            '%d 页' % len(doc))
 
     pagenums = []
     for p in doc:
@@ -224,7 +229,7 @@ def main(path, json_path=None):
         if small else '0（全文无 <6pt 文字）')
 
     # ── 汇总 ───────────────────────────────────────
-    print('\n===== V1.3 排版终版验收 =====')
+    print('\n===== 研究报告排版终版验收 =====')
     print('文件:', path)
     print('页面:', len(doc), '页 | 尺寸: %.1f x %.1f pt' % (W, H))
     print('-' * 56)
@@ -242,10 +247,22 @@ def main(path, json_path=None):
 
 
 if __name__ == '__main__':
-    pdf = sys.argv[1] if len(sys.argv) > 1 else 'V1.3_打印.pdf'
-    jp = sys.argv[2] if len(sys.argv) > 2 else None
+    args = sys.argv[1:]
+    expect_pages = None
+    if '--expect-pages' in args:
+        i = args.index('--expect-pages')
+        if i + 1 >= len(args):
+            sys.stderr.write('缺少 --expect-pages 的页数\n')
+            sys.exit(2)
+        expect_pages = int(args[i + 1])
+        del args[i:i + 2]
+    pdf = args[0] if args else None
+    if not pdf:
+        sys.stderr.write('用法: python3 终版排版验收.py <报告.pdf> [附录页码.json] [--expect-pages N]\n')
+        sys.exit(2)
+    jp = args[1] if len(args) > 1 else None
     if jp is None:
         cand = os.path.join(os.path.dirname(os.path.abspath(pdf)), '附录页码.json')
         if os.path.exists(cand):
             jp = cand
-    sys.exit(main(pdf, jp))
+    sys.exit(main(pdf, jp, expect_pages=expect_pages))
